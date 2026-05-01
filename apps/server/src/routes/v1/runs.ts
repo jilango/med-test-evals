@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 
+import { loadDataset } from "../../dataset";
 import { runner } from "../../services/runner.service";
 import { subscribeRunEvents } from "../../services/runner-broadcast";
 
@@ -58,6 +59,14 @@ runsApi.get("/runs/:id", async (c) => {
     orderBy: (t, { asc }) => [asc(t.transcriptId)],
   });
   return c.json({ run, cases });
+});
+
+runsApi.get("/transcripts/:transcriptId", async (c) => {
+  const transcriptId = c.req.param("transcriptId");
+  const dataset = await loadDataset();
+  const row = dataset.find((x) => x.transcript_id === transcriptId);
+  if (!row) return c.json({ error: "not_found" }, 404);
+  return c.json({ transcript_id: row.transcript_id, text: row.transcript });
 });
 
 runsApi.get("/runs/:id/events", async (c) => {
