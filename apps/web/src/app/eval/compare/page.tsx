@@ -1,12 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 import { apiJson } from "@/lib/api";
 
-type RunA = {
+type RunSummary = {
+  id: string;
+  status: string;
+  strategy: string;
+  model: string;
+  createdAt: string;
+  overallScore: number | null;
+  costUsd: number;
+  caseCountCompleted: number;
+  caseCountTotal: number;
+};
+
+type RunDetail = {
   id: string;
   strategy: string;
   model: string;
@@ -24,22 +36,48 @@ const FIELD_LABELS: { key: string; label: string }[] = [
 ];
 
 function CompareContent() {
+  const router = useRouter();
   const sp = useSearchParams();
   const a = sp.get("a") ?? "";
   const b = sp.get("b") ?? "";
-  const [runA, setRunA] = useState<RunA | null>(null);
-  const [runB, setRunB] = useState<RunA | null>(null);
+  const [runs, setRuns] = useState<RunSummary[]>([]);
+  const [selectedA, setSelectedA] = useState(a);
+  const [selectedB, setSelectedB] = useState(b);
+  const [runA, setRunA] = useState<RunDetail | null>(null);
+  const [runB, setRunB] = useState<RunDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const loadRuns = useCallback(async () => {
+    try {
+      const data = await apiJson<{ runs: RunSummary[] }>("/api/v1/runs");
+      setRuns(data.runs);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }, []);
+
   useEffect(() => {
-    if (!a || !b) return;
+    void loadRuns();
+  }, [loadRuns]);
+
+  useEffect(() => {
+    setSelectedA(a);
+    setSelectedB(b);
+  }, [a, b]);
+
+  useEffect(() => {
+    if (!a || !b) {
+      setRunA(null);
+      setRunB(null);
+      return;
+    }
     let cancelled = false;
     (async () => {
       setError(null);
       try {
         const [da, db_] = await Promise.all([
-          apiJson<{ run: RunA }>(`/api/v1/runs/${a}`),
-          apiJson<{ run: RunA }>(`/api/v1/runs/${b}`),
+          apiJson<{ run: RunDetail }>(`/api/v1/runs/${a}`),
+          apiJson<{ run: RunDetail }>(`/api/v1/runs/${b}`),
         ]);
         if (!cancelled) {
           setRunA(da.run);
@@ -96,13 +134,77 @@ function CompareContent() {
         </Link>
       </div>
       <h1 className="mb-2 text-2xl font-semibold">Compare runs</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Use query params <code className="text-xs">?a=RUN_ID&amp;b=RUN_ID</code>. Higher score wins per field.
-      </p>
+      <p className="mb-6 text-sm text-muted-foreground">Pick two completed runs to compare per-field deltas.</p>
 
-      {!a || !b ? (
-        <p className="text-sm text-muted-foreground">Add two run IDs in the URL to compare.</p>
-      ) : null}
+      <section className="mb-6 grid gap-3 rounded-lg border p-4">
+        <div className="grid gap-2 md:grid-cols-2">
+          <label className="grid gap-1 text-sm">
+            Run A (baseline)
+            <select
+              value={selectedA}
+              onChange={(e) => setSelectedA(e.target.value)}
+              className="rounded border bg-background px-2 py-1"
+            >
+              <option value="">Select a run…</option>
+              {runs.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.id.slice(0, 8)}… · {r.strategy} · {r.model} · {r.status} · {r.overallScore == null ? "—" : r.overallScore.toFixed(3)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm">
+            Run B (candidate)
+            <select
+              value={selectedB}
+              onChange={(e) => setSelectedB(e.target.value)}
+              className="rounded border bg-background px-2 py-1"
+            >
+              <option value="">Select a run…</option>
+              {runs.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.id.slice(0, 8)}… · {r.strategy} · {r.model} · {r.status} · {r.overallScore == null ? "—" : r.overallScore.toFixed(3)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+            disabled={!selectedA || !selectedB}
+            onClick={() => {
+              const qs = new URLSearchParams();
+              qs.set("a", selectedA);
+              qs.set("b", selectedB);
+              router.push(`/eval/compare?${qs.toString()}`);
+            }}
+          >
+            Compare
+          </button>
+          <button
+            type="button"
+            className="text-sm underline"
+            onClick={() => void loadRuns()}
+          >
+            Refresh runs
+          </button>
+          {selectedA && selectedB ? (
+            <button
+              type="button"
+              className="text-sm underline"
+              onClick={() => {
+                setSelectedA(selectedB);
+                setSelectedB(selectedA);
+              }}
+            >
+              Swap
+            </button>
+          ) : null}
+        </div>
+      </section>
 
       {error ? (
         <p className="mb-4 rounded border border-destructive/50 p-2 text-sm text-destructive">{error}</p>
@@ -146,7 +248,17 @@ function CompareContent() {
                   <td className="p-2 font-mono">{r.va == null ? "—" : r.va.toFixed(4)}</td>
                   <td className="p-2 font-mono">{r.vb == null ? "—" : r.vb.toFixed(4)}</td>
                   <td className="p-2 font-mono">{r.delta == null ? "—" : r.delta.toFixed(4)}</td>
-                  <td className="p-2 font-medium">{r.winner}</td>
+                  <td
+                    className={
+                      r.winner === "A"
+                        ? "p-2 font-medium text-amber-600 dark:text-amber-400"
+                        : r.winner === "B"
+                          ? "p-2 font-medium text-emerald-700 dark:text-emerald-400"
+                          : "p-2 font-medium text-muted-foreground"
+                    }
+                  >
+                    {r.winner}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -154,7 +266,9 @@ function CompareContent() {
         </div>
       ) : a && b && !error ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : null}
+      ) : (
+        <p className="text-sm text-muted-foreground">Select two runs above to compare.</p>
+      )}
     </div>
   );
 }
