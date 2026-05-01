@@ -1,0 +1,26 @@
+{
+  "name": "@test-evals/llm",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.60.0",
+    "ajv": "^8.17.1",
+    "@test-evals/shared": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@test-evals/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
+
