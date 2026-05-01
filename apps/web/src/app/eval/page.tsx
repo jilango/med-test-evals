@@ -54,12 +54,14 @@ export default function EvalRunsPage() {
     const force = fd.get("force") === "on";
     const body: Record<string, unknown> = { strategy, model, force };
     if (idsRaw.length) {
-      body.dataset_filter = {
-        ids: idsRaw
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      };
+      // Accept comma-, space-, or newline-separated IDs (e.g. pasting from a column).
+      const ids = idsRaw
+        .split(/[\s,]+/g)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (ids.length) {
+        body.dataset_filter = { ids };
+      }
     }
     try {
       const res = await apiJson<{ run_id: string }>("/api/v1/runs", {
@@ -104,7 +106,7 @@ export default function EvalRunsPage() {
             />
           </label>
           <label className="grid gap-1 text-sm">
-            Transcript IDs (optional, comma-separated; empty = full dataset)
+            Transcript IDs (optional; comma/space/newline-separated; empty = full dataset)
             <input
               name="ids"
               placeholder="case_001, case_002"
