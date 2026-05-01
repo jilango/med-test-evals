@@ -12,6 +12,7 @@
       "devDependencies": {
         "@test-evals/config": "workspace:*",
         "@types/bun": "catalog:",
+        "drizzle-orm": "^0.45.1",
         "turbo": "^2.8.12",
         "typescript": "catalog:",
       },
