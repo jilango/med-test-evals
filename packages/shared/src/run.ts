@@ -34,6 +34,7 @@ export type RunCaseResultDto = {
   transcript_id: string;
   scores: RunCaseScore;
   hallucination_count: number;
+  hallucination_report?: { count: number; fields: Record<string, boolean> };
   schema_valid: boolean;
   prediction: unknown;
   gold: unknown;

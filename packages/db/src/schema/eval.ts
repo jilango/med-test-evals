@@ -72,6 +72,10 @@ export const runCases = pgTable(
     gold: jsonb("gold").$type<unknown>(),
     scores: jsonb("scores").$type<unknown>(),
     hallucinationCount: integer("hallucination_count").notNull().default(0),
+    hallucinationReport: jsonb("hallucination_report").$type<{
+      count: number;
+      fields: Record<string, boolean>;
+    }>(),
     schemaValid: boolean("schema_valid").notNull().default(true),
     attempts: jsonb("attempts").$type<unknown[]>(),
     promptHash: text("prompt_hash").notNull(),

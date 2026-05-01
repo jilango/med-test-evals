@@ -296,6 +296,10 @@ export function createRunner(deps: Partial<RunnerDeps> = {}) {
         gold,
         scores: evaluated.scores,
         hallucinationCount: evaluated.hallucinations.count,
+        hallucinationReport: {
+          count: evaluated.hallucinations.count,
+          fields: evaluated.hallucinations.fields,
+        },
         schemaValid,
         attempts: attempts as unknown[],
         promptHash,
