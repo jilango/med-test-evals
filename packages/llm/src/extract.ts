@@ -44,6 +44,18 @@ export function computePromptHash(args: {
   );
 }
 
+export function computePromptHashForStrategy(strategy: Strategy, model: string) {
+  const strat = strategies[strategy];
+  const examples = strat.examples ?? [];
+  return computePromptHash({
+    strategy,
+    model,
+    system: strat.system,
+    schema: extractionJsonSchema,
+    examples,
+  });
+}
+
 export async function extractWithRetry(args: {
   client: AnthropicMessageClient;
   strategy: Strategy;

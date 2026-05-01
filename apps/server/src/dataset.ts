@@ -1,5 +1,6 @@
-import { readFile, readdir } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { ClinicalExtractionSchema, sha256Hex } from "@test-evals/shared";
 
@@ -16,8 +17,35 @@ function withoutExt(filename: string) {
   return filename.replace(/\.[^/.]+$/, "");
 }
 
+async function findRepoRoot() {
+  const candidates = [
+    process.cwd(),
+    path.resolve(process.cwd(), ".."),
+    path.resolve(process.cwd(), "..", ".."),
+    path.dirname(fileURLToPath(import.meta.url)),
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", ".."),
+  ];
+
+  for (const start of candidates) {
+    let cur = start;
+    for (let i = 0; i < 8; i++) {
+      const schemaPath = path.join(cur, "data", "schema.json");
+      try {
+        await access(schemaPath);
+        return cur;
+      } catch {
+        const parent = path.dirname(cur);
+        if (parent === cur) break;
+        cur = parent;
+      }
+    }
+  }
+
+  throw new Error("Could not locate repo root (missing data/schema.json).");
+}
+
 export async function loadDataset() {
-  const repoRoot = process.cwd();
+  const repoRoot = await findRepoRoot();
   const transcriptsDir = path.join(repoRoot, "data", "transcripts");
   const goldDir = path.join(repoRoot, "data", "gold");
 

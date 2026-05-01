@@ -4,6 +4,8 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
+import { runsApi } from "./routes/v1/runs";
+
 const app = new Hono();
 
 app.use(logger());
@@ -18,6 +20,8 @@ app.use(
 );
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+app.route("/api/v1", runsApi);
 
 app.get("/", (c) => {
   return c.text("OK");
