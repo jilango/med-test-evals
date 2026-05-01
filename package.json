@@ -29,6 +29,7 @@
     "check-types": "turbo check-types",
     "test": "bun test",
     "test:integration": "RUN_ANTHROPIC_INTEGRATION=1 bun test tests/integration-anthropic-phases.test.ts",
+    "eval": "bun run apps/server/src/cli/eval.ts --",
     "dev:web": "turbo -F web dev",
     "dev:server": "turbo -F server dev",
     "db:push": "turbo -F @test-evals/db db:push",
