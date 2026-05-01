@@ -1,0 +1,11 @@
+{
+  "extends": "@test-evals/config/tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@test-evals/shared/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+

@@ -22,6 +22,7 @@
         "@test-evals/auth": "workspace:*",
         "@test-evals/db": "workspace:*",
         "@test-evals/env": "workspace:*",
+        "@test-evals/shared": "workspace:*",
         "better-auth": "catalog:",
         "dotenv": "catalog:",
         "hono": "^4.8.2",
@@ -109,6 +110,17 @@
       "devDependencies": {
         "@test-evals/config": "workspace:*",
         "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/shared": {
+      "name": "@test-evals/shared",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@test-evals/config": "workspace:*",
         "typescript": "catalog:",
       },
     },
@@ -526,6 +538,8 @@
     "@test-evals/db": ["@test-evals/db@workspace:packages/db"],
 
     "@test-evals/env": ["@test-evals/env@workspace:packages/env"],
+
+    "@test-evals/shared": ["@test-evals/shared@workspace:packages/shared"],
 
     "@test-evals/ui": ["@test-evals/ui@workspace:packages/ui"],
 
