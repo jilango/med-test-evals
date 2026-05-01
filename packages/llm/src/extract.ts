@@ -74,13 +74,29 @@ export async function extractWithRetry(args: {
   });
 
   const cached: CacheControl = { type: "ephemeral", ttl: strat.cache_ttl };
-  const transcriptBlock: CacheControl = { type: "ephemeral" }; // do not reuse across cases
+
+  const exampleText =
+    examples.length > 0
+      ? [
+          "",
+          "FEW-SHOT EXAMPLES (follow the pattern; output must still conform to schema):",
+          ...examples.flatMap((ex, idx) => [
+            "",
+            `Example ${idx + 1} transcript:`,
+            ex.transcript,
+            "",
+            `Example ${idx + 1} extraction_json:`,
+            JSON.stringify(ex.extraction_json),
+          ]),
+        ].join("\n")
+      : "";
 
   const baseSystem = [
     strat.system,
     "",
     "JSON Schema (for reference):",
     JSON.stringify(extractionJsonSchema),
+    exampleText,
   ].join("\n");
 
   const tools = [
@@ -88,7 +104,6 @@ export async function extractWithRetry(args: {
       name: "submit_extraction",
       description: "Submit the clinical extraction JSON.",
       input_schema: extractionJsonSchema,
-      cache_control: cached,
     },
   ];
 
@@ -97,31 +112,6 @@ export async function extractWithRetry(args: {
 
   for (let attempt = 1; attempt <= args.maxAttempts; attempt++) {
     const messages: any[] = [];
-
-    // Few-shot examples as cached prefix (kept small to control spend)
-    for (const ex of examples) {
-      messages.push({
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: `Transcript:\n${ex.transcript}\n\nExtract now.`,
-            cache_control: cached,
-          },
-        ],
-      });
-      messages.push({
-        role: "assistant",
-        content: [
-          {
-            type: "tool_use",
-            name: "submit_extraction",
-            input: ex.extraction_json,
-            cache_control: cached,
-          },
-        ],
-      });
-    }
 
     const userTextParts: string[] = [];
     userTextParts.push(`Transcript:\n${args.transcript}`);
@@ -143,7 +133,6 @@ export async function extractWithRetry(args: {
         {
           type: "text",
           text: userTextParts.join("\n"),
-          cache_control: transcriptBlock,
         },
       ],
     });
